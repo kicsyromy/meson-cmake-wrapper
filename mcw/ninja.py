@@ -44,6 +44,11 @@ class NinjaBackend:
     def get_target(self, target_name):
         target = next((t for t in self.meson.get_targets() if t['name'] == target_name), None)
         if target:
-            return target['filename']
+            return self.meson.get_target_filename(target)
 
         return target_name
+
+    def get_targets(self):
+        lines = self.call(['-C', self.meson.build_dir, '-t', 'targets', 'all']).split('\n')
+        all_targets = [x.split(':') for x in lines]
+        return [t[0] for t in all_targets if len(t) > 1 and "LINKER" in t[1]]

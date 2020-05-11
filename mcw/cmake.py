@@ -193,8 +193,17 @@ class CMakeWrapper:
         self.load_cache_entries()
         self.meson.setup()
 
+        if self.target == 'help':
+             self.print_targets()
+             return
+
         print('Building target: ' + self.target)
         self.meson.build(self.target)
+
+    def print_targets(self):
+        print("The following are some of the valid targets for this Makefile:")
+        for target in self.meson.backend.get_targets():
+            print(f'... {target}')
 
     def tool_cmd(self):
         self.tool.run(self.command_args)
@@ -435,6 +444,8 @@ class CMakeWrapper:
                     file.write('add_library(%s\n    ' % (target['name']))
                 elif target['type'] == 'shared library':
                     file.write('add_library(%s SHARED\n    ' % (target['name']))
+                elif target['type'] == 'shared module':
+                    file.write('add_library(%s MODULE\n    ' % (target['name']))
 
                 target_files = self.meson.get_target_files(target)
                 file.write('\n    '.join(target_files) + ')\n')
@@ -458,7 +469,7 @@ class CMakeWrapper:
             'name': 'all',
             'id': 'all',
             'type': 'custom',
-            'filename': ''
+            'filename': self.meson.get_target_filename_default()
         }
 
         for target in [all_target] + self.meson.get_targets():
@@ -472,6 +483,7 @@ class CMakeWrapper:
                 'executable': '1',
                 'static library': '2',
                 'shared library': '3',
+                'shared module': '3',
                 'custom': '4',
                 'run': '4'
             }[target['type']]
@@ -625,6 +637,12 @@ class CMakeWrapper:
                         flags_file.write('%s_FLAGS = %s\n' % (lang, ' '.join([flag for flag in self.meson.get_flags(target) if flag.startswith('-std')])))
                         flags_file.write('%s_DEFINES = %s\n' % (lang, ' '.join(self.meson.get_defines(target))))
                         flags_file.write('%s_INCLUDES = %s\n' % (lang, ' '.join(['-I' + inc_dir for inc_dir in self.meson.get_include_directories(target, False)])))
+
+    def get_target_name(self, target):
+        target_name = target['name']
+        if target['filename'] and target['filename'][0]:
+            target_name = target['filename'][0].replace(self.build_dir + '/', '', 1)
+        return target_name
 
     def gen_android_gradle_project(self):
         if not self.get_entry('ANDROID_ABI'):
