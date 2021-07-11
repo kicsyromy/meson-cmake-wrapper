@@ -237,6 +237,12 @@ class Meson:
         else:
             return filename
 
+    def get_target_filename_default(self):
+        if self.get_version()[1] >= 50:
+            return ['']
+        else:
+            return ''
+
     def get_options(self):
         meson_options = []
 
